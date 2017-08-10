@@ -15,6 +15,8 @@
 int minx,miny,maxx,maxy,pointx,pointy,r;
 u16 picture[48][64];
 u16 R,G,B;
+u16 i,j,k;
+u16 color;
 const u8*LMODE_TBL[5]={"Auto","Sunny","Cloudy","Office","Home"};							//5÷÷π‚’’ƒ£ Ω	    
 //const u8*EFFECTS_TBL[7]={"Normal","Negative","B&W","Redish","Greenish","Bluish","Antique"};	//7÷÷Ãÿ–ß 
 extern u8 ov_sta;	//‘⁄exit.c¿Ô √Ê∂®“Â
@@ -22,12 +24,11 @@ extern u8 ov_frame;	//‘⁄timer.c¿Ô√Ê∂®“Â
 //∏¸–¬LCDœ‘ æ
 void camera_refresh(void)
 {
-	u32 i,j;
- 	u16 color;
-	minx=270;
-	miny=230;
-	maxx=50;
-	maxy=10;	
+
+	minx=269;
+	miny=229;
+	maxx=49;
+	maxy=9;	
 	if(ov_sta)//”–÷°÷–∂œ∏¸–¬£ø
 	{
 		LCD_Scan_Dir(U2D_L2R);		//¥”…œµΩœ¬,¥”◊ÛµΩ”“  
@@ -40,9 +41,9 @@ void camera_refresh(void)
 		OV7670_RCK_L;
 		OV7670_RRST=1;				//∏¥Œª∂¡÷∏’ÎΩ· ¯ 
 		OV7670_RCK_H;
-		for(i=0;i<240;i++)
+		for(j=0;j<240;j++)
 		{
-			for(j=0;j<320;j++)
+			for(i=0;i<320;i++)
 			{
 				OV7670_RCK_L;
 				color=GPIOC->IDR&0XFF;	//∂¡ ˝æ›
@@ -56,130 +57,70 @@ void camera_refresh(void)
 				G = (color&0x07e0)>>5;
 				B = (color&0x001f);
 				
-				if(R<=10&&G<=20&&B<=10)
+				if(R<=18&&G<=27&&B<=18)//∂˛÷µªØ
 				{
 					color = 0x0000;
-					if(i>=10&&i<=230&&j>=50&&j<=270)
+					if(i>=49&&i<=269&&j>=9&&j<=229)
 					{
-						minx = j<minx?j:minx;
-						miny = i<miny?i:miny;
-						maxx = j>maxx?j:maxx;
-						maxy = i>maxy?i:maxy;
+						minx = i<minx?i:minx;
+						miny = j<miny?j:miny;
+						maxx = i>maxx?i:maxx;
+						maxy = j>maxy?j:maxy;
 					}
 				}
 				else color = 0xffff;
 				
+				if(i==49||i==269||j==9||j==229)
+					color = 0xF800;//±Í◊¢ ∂±∑∂Œß
+				
 				LCD->LCD_RAM=color; 
 			}  
-		}   							  
+		}   				
+
  		ov_sta=0;					//«Â¡„÷°÷–∂œ±Íº«
-		ov_frame++; 
 		pointx = (minx+maxx)/2;
 		pointy = (miny+maxy)/2;
 		r = ((maxx-minx)+(maxy-miny))/4;
-		LCD_DrawRectangle(minx,miny,maxx,maxy);
-		LCD_Draw_Circle(pointx,pointy,r);
-		LCD_Scan_Dir(DFT_SCAN_DIR);	//ª÷∏¥ƒ¨»œ…®√Ë∑ΩœÚ 
-//		LCD_DrawRectangle(miny,minx,maxy,maxx);
+		LCD_DrawRectangle(minx,miny,maxx,maxy);	
+		
+		USART1->DR = (u8) (pointx-49);      	//–¥DR,¥Æø⁄1Ω´∑¢ÀÕ ˝æ›
+		while((USART1->SR&0X40)==0);//µ»¥˝…œ“ª¥Œ¥Æø⁄ ˝æ›∑¢ÀÕÕÍ≥…  
+		USART1->DR = (u8) (pointy-9);      	//–¥DR,¥Æø⁄1Ω´∑¢ÀÕ ˝æ
+		while((USART1->SR&0X40)==0);
+		USART1->DR = (u8) 0x0d; 		
+		while((USART1->SR&0X40)==0); //µ»¥˝…œ“ª¥Œ¥Æø⁄ ˝æ›∑¢ÀÕÕÍ≥…  
+		USART1->DR = (u8) 0x0a; 			
+		while((USART1->SR&0X40)==0); //µ»¥˝…œ“ª¥Œ¥Æø⁄ ˝æ›∑¢ÀÕÕÍ≥… 
+		
+//		printf("%d%d\r\n",pointx-49,pointy-9);
+//		LCD_Draw_Circle(pointx,pointy,r);
+//		LCD_Scan_Dir(DFT_SCAN_DIR);	//ª÷∏¥ƒ¨»œ…®√Ë∑ΩœÚ 
+
+//		USART1->DR = (u8) (pointx-49);      	//–¥DR,¥Æø⁄1Ω´∑¢ÀÕ ˝æ›
+//		while((USART1->SR&0X40)==0);//µ»¥˝…œ“ª¥Œ¥Æø⁄ ˝æ›∑¢ÀÕÕÍ≥…  
+//		USART1->DR = (u8) (pointy-9);      	//–¥DR,¥Æø⁄1Ω´∑¢ÀÕ ˝æ
+//		while((USART1->SR&0X40)==0);
+//		USART1->DR = (u8) 0x0d; 		
+//		while((USART1->SR&0X40)==0); //µ»¥˝…œ“ª¥Œ¥Æø⁄ ˝æ›∑¢ÀÕÕÍ≥…  
+//		USART1->DR = (u8) 0x0a; 			
+//		while((USART1->SR&0X40)==0); //µ»¥˝…œ“ª¥Œ¥Æø⁄ ˝æ›∑¢ÀÕÕÍ≥…  
+
 	} 
 }	   
 
-void tuxiangchuli()
-{
-	int i,j;	
-	minx=2;
-	miny=10;
-	maxx=46;
-	maxy=54;
-	pointx = 0;
-	pointy = 0;
-//	R = (picture[32][24]&0xf800)>>11;
-//	G = (picture[32][24]&0x07e0)>>5;
-//	B = (picture[32][24]&0x001f);
-//	LCD_ShowNum(30,50,R,3,16);
-//	LCD_ShowNum(30,70,G,3,16);
-//	LCD_ShowNum(30,90,B,3,16);
-//	LCD_DrawPoint(24*5,32*5);
-//	tt = (R*38 + G*75 + B*15) >> 7;
-
-	for(i=2;i<46;i++)
-	{
-		for(j=10;j<54;j++)
-		{
-//			R = (picture[i][j]&0xf800)>>11;
-//			G = (picture[i][j]&0x07e0)>>5;
-//			B = (picture[i][j]&0x001f);
-			if(picture[i][j] <=0x1111)
-			{
-//				R = (picture[i+1][j]&0xf800)>>11;
-//				G = (picture[i+1][j]&0x07e0)>>5;
-//				B = (picture[i+1][j]&0x001f);
-//				if(R<=10&&G<=20&&B<=10)
-//				{
-					minx = i;
-					pointy = j;
-					i = 46;
-					j = 54;
-
-//					miny = j+1;
-//				}
-			}
-		}
-	}
-	LCD_ShowNum(30,50,minx,3,16);
-	LCD_ShowNum(30,70,pointy,3,16);
-	LCD_Fast_DrawPoint(miny*5,pointy*5,RED);
-//	for(i=minx;i<54;i++)
-//	{
-//			R = (picture[i][pointy]&0xf800)>>11;
-//			G = (picture[i][pointy]&0x07e0)>>5;
-//			B = (picture[i][pointy]&0x001f);
-//		if(R>=15&&G>=25&&B>=15)
-//		{
-//			R = (picture[i+2][pointy]&0xf800)>>11;
-//			G = (picture[i+2][pointy]&0x07e0)>>5;
-//			B = (picture[i+2][pointy]&0x001f);
-//			if(R>=15&&G>=25&&B>=15)
-//			{
-//				maxx = i;
-//				i = 54;
-//				break;
-//			}
-//		}
-//	}
-//	if(minx!=10&&maxx!=54&&pointy!=0)
-//	{
-//		pointx = (minx+maxx)/2;
-//		r = pointx - minx;
-//	}
-//	LCD_Fast_DrawPoint(miny*5+maxy*5,j,RED);
-//	LCD_Scan_Dir(U2D_L2R);
-//	LCD_DrawRectangle(pointy*5,minx*5,pointy*5+10,minx*5+20);
-//	LCD_Draw_Circle(pointy*5,minx*5,5);
-//	LCD_Scan_Dir(DFT_SCAN_DIR);	
-//	if(R>=15)
-//	{
-//	}
-//	else
-//	{
-//		LCD_ShowString(30,50,200,16,16,"black");
-//	}
-}
-
-
 int main(void)
 {		
-	u8 key;
+//	u8 key;
 	u8 lightmode=0,saturation=2,brightness=2,contrast=2;
 	u8 effect=0;	 
- 	u8 i=0;	    
-	u8 msgbuf[15];				//œ˚œ¢ª∫¥Ê«¯
-	u8 tm=0; 
+// 	u8 i=0;	    
+//	u8 msgbuf[15];				//œ˚œ¢ª∫¥Ê«¯
+//	u8 tm=0; 
  	Stm32_Clock_Init(9);		//œµÕ≥ ±÷”…Ë÷√
 	uart_init(72,115200);		//¥Æø⁄≥ı ºªØŒ™115200
 	delay_init(72);	   	 		//—” ±≥ı ºªØ 
- 	usmart_dev.init(72);		//≥ı ºªØUSMART		
- 	LED_Init();		  			//≥ı ºªØ”ÎLED¡¨Ω”µƒ”≤º˛Ω”ø⁄
+// 	usmart_dev.init(72);		//≥ı ºªØUSMART		
+// 	LED_Init();		  			//≥ı ºªØ”ÎLED¡¨Ω”µƒ”≤º˛Ω”ø⁄
 	KEY_Init();					//≥ı ºªØ∞¥º¸
 	LCD_Init();			   		//≥ı ºªØLCD  
 //	TPAD_Init(6);				//¥•√˛∞¥º¸≥ı ºªØ 
@@ -192,7 +133,7 @@ int main(void)
 	LCD_ShowString(30,150,200,16,16,"KEY1:Saturation");
 	LCD_ShowString(30,170,200,16,16,"KEY2:Brightness");
 	LCD_ShowString(30,190,200,16,16,"KEY_UP:Contrast");
-	LCD_ShowString(30,210,200,16,16,"TPAD:Effects");	 
+//	LCD_ShowString(30,210,200,16,16,"TPAD:Effects");	 
   	LCD_ShowString(30,230,200,16,16,"OV7670 Init...");	  
 	while(OV7670_Init())//≥ı ºªØOV7670
 	{
@@ -213,63 +154,12 @@ int main(void)
 	OV7670_Window_Set(12,176,240,320);	//…Ë÷√¥∞ø⁄	  
   	OV7670_CS=0;					
 	LCD_Clear(BLACK);	
-//	OV7670_Special_Effects(0);//…Ë÷√Ãÿ–ß
+	OV7670_Special_Effects(0);//…Ë÷√Ãÿ–ß
  	while(1)
 	{	
-//		key=KEY_Scan(0);//≤ª÷ß≥÷¡¨∞¥
-//		if(key)
-//		{
-//			tm=20;
-//			switch(key)
-//			{				    
-//				case KEY0_PRES:	//µ∆π‚ƒ£ ΩLight Mode
-//					lightmode++;
-//					if(lightmode>4)lightmode=0;
-//					OV7670_Light_Mode(lightmode);
-//					sprintf((char*)msgbuf,"%s",LMODE_TBL[lightmode]);
-//					break;
-//				case KEY1_PRES:	//±•∫Õ∂»Saturation
-//					saturation++;
-//					if(saturation>4)saturation=0;
-//					OV7670_Color_Saturation(saturation);
-//					sprintf((char*)msgbuf,"Saturation:%d",(signed char)saturation-2);
-//					break;
-//				case KEY2_PRES:	//¡¡∂»Brightness				 
-//					brightness++;
-//					if(brightness>4)brightness=0;
-//					OV7670_Brightness(brightness);
-//					sprintf((char*)msgbuf,"Brightness:%d",(signed char)brightness-2);
-//					break;
-//				case WKUP_PRES:	//∂‘±»∂»Contrast			    
-//					contrast++;
-//					if(contrast>4)contrast=0;
-//					OV7670_Contrast(contrast);
-//					sprintf((char*)msgbuf,"Contrast:%d",(signed char)contrast-2);
-//					break;
-//			}
-//		}	 
-//		if(TPAD_Scan(0))//ºÏ≤‚µΩ¥•√˛∞¥º¸ 
-//		{
-//			effect++;
-//			if(effect>6)effect=0;
-
-//	 		sprintf((char*)msgbuf,"%s",EFFECTS_TBL[effect]);
-//			tm=20;
-//		} 
-		OV7670_Special_Effects(0);
+//		OV7670_Special_Effects(0);
 		camera_refresh();//∏¸–¬œ‘ æ
-//		tuxiangchuli();
-// 		if(tm)
-//		{
-//			LCD_ShowString((lcddev.width-240)/2+30,(lcddev.height-320)/2+60,200,16,16,msgbuf);
-//			tm--;
-//		}
-//		i++;
-//		if(i==15)//DS0…¡À∏.
-//		{
-//			i=0;
-//			LED0=!LED0;
-// 		}
+
 	}	   
 }
 
